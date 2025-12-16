@@ -17,6 +17,9 @@ function CurrentTime(props) {
       axios
         .get(`${props.api}`)
         .then((res) => res.data),
+    //retry: 3,                  // retry up to 3 times
+    //retryDelay: 500,           // wait 500 ms between retries
+    //refetchInterval: 5000,    // whatever you already have
   });
 
   if (isLoading) return `Loading ${props.api}... `;

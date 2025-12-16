@@ -1,13 +1,8 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
-	"os"
-	"time"
-
 	"github.com/gin-gonic/gin"
-
 	"api-golang/database"
 )
 
@@ -23,18 +18,18 @@ func init() {
 func main() {
 
 	r := gin.Default()
-	var tm time.Time
+	var now string
 
 	r.GET("/", func(c *gin.Context) {
-		tm = database.GetTime(c)
+		now = database.GetTime(c)
 		c.JSON(200, gin.H{
 			"api": "golang",
-			"now": tm,
+			"now": now,
 		})
 	})
 
 	r.GET("/ping", func(c *gin.Context) {
-		tm = database.GetTime(c)
+		now = database.GetTime(c)
 		c.JSON(200, "pong")
 	})
 

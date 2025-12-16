@@ -12,6 +12,8 @@ export default defineConfig({
       '/api/golang': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        //timeout: 5000,          // add a delay so react start last  after node and go servers
+        //proxyTimeout: 5000,     // 
         rewrite: (path) => path.replace(/^\/api\/golang/, ''),
         secure: false,
       },
