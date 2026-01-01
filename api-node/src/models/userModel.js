@@ -31,8 +31,14 @@ async function findById(id) {
   return user;
 }
 
-module.exports = {
-  createUser,
-  findByEmailOrUsername,
-  findById,
-};
+async function findByIdWithPassword(id) {
+  const db = await openDb();
+  const user = await db.get(
+    `SELECT * FROM users WHERE id = ?`,
+    [id]
+  );
+  await db.close();
+  return user;
+}
+
+module.exports = { createUser, findByEmailOrUsername, findById, findByIdWithPassword };

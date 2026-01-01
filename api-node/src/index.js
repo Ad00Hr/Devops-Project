@@ -8,6 +8,7 @@ app.use(express.json());
 
 // Routes auth
 app.use('/auth', require('./routes/auth'));
+
 // Healthcheck
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
