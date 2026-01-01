@@ -7,12 +7,12 @@ const app = express();
 app.use(express.json());
 
 // Routes auth
-const authRoutes = require('./routes/auth');
-app.use('/auth', authRoutes);
-
+app.use('/auth', require('./routes/auth'));
 // Healthcheck
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // Lancer le serveur
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Auth API running on port ${PORT}`);
+});
