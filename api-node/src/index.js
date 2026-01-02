@@ -13,6 +13,9 @@ app.use("/auth", require("./routes/auth"));
 const chatRoutes = require("./routes/chat.routes");
 app.use("/api/chat", chatRoutes);
 
+// 🔥 ROUTES CHAT (AJOUT)
+app.use('/messages', require('./routes/messages'));
+
 // Healthcheck
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
