@@ -6,7 +6,7 @@ const app = express();
 // Middleware global
 app.use(express.json());
 
-// Routes auth (déjà existantes)
+// Routes auth 
 app.use("/auth", require("./routes/auth"));
 
 // Routes chat
