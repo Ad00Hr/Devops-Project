@@ -1,47 +1,61 @@
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQuery,
-} from "@tanstack/react-query";
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import axios from "axios";
-
-import './App.css'
+import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import CurrentTime from "./CurrentTime";
+import AuthApp from "./AuthApp";
+import './App.css';
 
 const queryClient = new QueryClient();
 
-function CurrentTime(props) {
-  const { isLoading, error, data, isFetching } = useQuery({
-    queryKey: [props.api],
-    queryFn: () =>
-      axios
-        .get(`${props.api}`)
-        .then((res) => res.data),
-  });
+export default function App() {
+  const [showAuth, setShowAuth] = useState(false); // pour afficher AuthApp
 
-  if (isLoading) return `Loading ${props.api}... `;
-
-  if (error) return "An error has occurred: " + error.message;
-
-  return (
-    <div className="App">
-      <p>---</p>
-      <p>API: {data.api}</p>
-      <p>Time from DB: {data.now}</p>
-      <div>{isFetching ? "Updating..." : ""}</div>
-    </div>
-  )
-}
-
-export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <h1>Hey Team! 👋</h1>
-      <CurrentTime api="/api/golang/"/>
-      <CurrentTime api="/api/node/"/>
-      <ReactQueryDevtools initialIsOpen={false} />
+      <div className="App" style={{ padding: 20 }}>
+        <h1>Hey Team! 👋</h1>
+
+        {!showAuth && (
+          <>
+            {/* Bouton bien visible */}
+            <div style={{ margin: "20px 0" }}>
+              <button
+                style={{
+                  padding: "10px 20px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  borderRadius: "5px",
+                  backgroundColor: "#4CAF50",
+                  color: "white",
+                  border: "none"
+                }}
+                onClick={() => setShowAuth(true)}
+              >
+                Accéder à l'authentification
+              </button>
+            </div>
+
+            {/* Affichage de tes APIs seulement si pas sur Auth */}
+            <CurrentTime api="/api/golang/" />
+            <CurrentTime api="/api/node/" />
+          </>
+        )}
+
+        {/* Affiche AuthApp uniquement si l'utilisateur clique sur le bouton */}
+        {showAuth && (
+          <>
+            <button
+              style={{ marginBottom: 20 }}
+              onClick={() => setShowAuth(false)}
+            >
+              ← Retour
+            </button>
+            <AuthApp />
+          </>
+        )}
+
+        <ReactQueryDevtools initialIsOpen={false} />
+      </div>
     </QueryClientProvider>
   );
 }
-
-export default App
