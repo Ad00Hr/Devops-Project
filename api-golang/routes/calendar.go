@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"database/sql"
 	"net/http"
 
 	"api-golang/database"
@@ -23,7 +24,7 @@ func GetCalendar(c *gin.Context) {
 		FROM calendar
 	`)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch calendar"})
 		return
 	}
 	defer rows.Close()
@@ -32,7 +33,10 @@ func GetCalendar(c *gin.Context) {
 
 	for rows.Next() {
 		var it CalendarItem
-		_ = rows.Scan(&it.ID, &it.Title, &it.Description, &it.StartDate, &it.EndDate, &it.UserID)
+		if err := rows.Scan(&it.ID, &it.Title, &it.Description, &it.StartDate, &it.EndDate, &it.UserID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read calendar entry"})
+			return
+		}
 		items = append(items, it)
 	}
 
@@ -44,7 +48,7 @@ func CreateCalendar(c *gin.Context) {
 	var body CalendarItem
 
 	if err := c.BindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid json"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid json body"})
 		return
 	}
 
@@ -52,9 +56,8 @@ func CreateCalendar(c *gin.Context) {
 		"INSERT INTO calendar (title, description, start_date, end_date, user_id) VALUES (?, ?, ?, ?, ?)",
 		body.Title, body.Description, body.StartDate, body.EndDate, body.UserID,
 	)
-
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to insert calendar entry"})
 		return
 	}
 
@@ -63,58 +66,64 @@ func CreateCalendar(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, body)
 }
+
 // GET /calendar/:id
 func GetCalendarByID(c *gin.Context) {
-    id := c.Param("id")
+	id := c.Param("id")
 
-    var item CalendarItem
+	var item CalendarItem
 
-    err := database.DB().QueryRow(
-        "SELECT id, title, description, start_date, end_date FROM calendar WHERE id = ?",
-        id,
-    ).Scan(&item.ID, &item.Title, &item.Description, &item.StartDate, &item.EndDate, &item.UserID)
+	err := database.DB().QueryRow(
+		"SELECT id, title, description, start_date, end_date, user_id FROM calendar WHERE id = ?",
+		id,
+	).Scan(&item.ID, &item.Title, &item.Description, &item.StartDate, &item.EndDate, &item.UserID)
 
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "calendar item not found"})
+		return
+	}
 
-    if err != nil {
-        c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-        return
-    }
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch calendar item"})
+		return
+	}
 
-    c.JSON(http.StatusOK, item)
+	c.JSON(http.StatusOK, item)
 }
 
 // PUT /calendar/:id
 func UpdateCalendar(c *gin.Context) {
-    id := c.Param("id")
+	id := c.Param("id")
 
-    var body CalendarItem
-    if err := c.BindJSON(&body); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid json"})
-        return
-    }
+	var body CalendarItem
+	if err := c.BindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid json body"})
+		return
+	}
 
-    _, err := database.DB().Exec(
-        "UPDATE calendar SET title=?, description=?, start_date=?, end_date=?, user_id=? WHERE id=?",
-        body.Title, body.Description, body.StartDate, body.EndDate, id,
-    )
+	_, err := database.DB().Exec(
+		"UPDATE calendar SET title=?, description=?, start_date=?, end_date=?, user_id=? WHERE id=?",
+		body.Title, body.Description, body.StartDate, body.EndDate, body.UserID, id,
+	)
 
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update calendar item"})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{"status": "updated"})
+	c.JSON(http.StatusOK, gin.H{"status": "updated"})
 }
+
 // DELETE /calendar/:id
 func DeleteCalendar(c *gin.Context) {
-    id := c.Param("id")
+	id := c.Param("id")
 
-    _, err := database.DB().Exec("DELETE FROM calendar WHERE id = ?", id)
+	_, err := database.DB().Exec("DELETE FROM calendar WHERE id = ?", id)
 
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete calendar item"})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+	c.JSON(http.StatusOK, gin.H{"status": "deleted"})
 }
