@@ -1,4 +1,4 @@
-# 🏗️ STAGE 1 — Build
+# STAGE 1 — Build
 FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
@@ -17,7 +17,7 @@ ENV CGO_ENABLED=1
 RUN go build -o app main.go
 
 
-# 🚀 STAGE 2 — Runtime léger
+#  STAGE 2 — Runtime léger
 FROM alpine:3.20
 
 WORKDIR /app
