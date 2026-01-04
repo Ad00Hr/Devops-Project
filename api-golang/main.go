@@ -1,28 +1,31 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"api-golang/database"
+	searchhttp "api-golang/search/http"
+	searchservice "api-golang/search/service"
 )
 
 func init() {
-	// NEW: No arguments, no DATABASE_URL, no file reading
 	if err := database.InitDB(); err != nil {
 		log.Fatalf("Unable to open SQLite database (dev.db): %v", err)
 	}
 	log.Println("SQLite database ready (dev.db)")
-
 }
 
 func main() {
 
 	r := gin.Default()
+
+	// 🔍 Search service
+	searchService := searchservice.NewSearchService()
+	searchHandler := searchhttp.NewSearchHandler(searchService)
+
 	var tm time.Time
 
 	r.GET("/", func(c *gin.Context) {
@@ -38,5 +41,10 @@ func main() {
 		c.JSON(200, "pong")
 	})
 
-	r.Run() // listen and serve on 0.0.0.0:8080 (or "PORT" env var)
+	// 🔎 Global search route
+	r.GET("/api/search", func(c *gin.Context) {
+		searchHandler.HandleSearch(c.Writer, c.Request)
+	})
+
+	r.Run()
 }
