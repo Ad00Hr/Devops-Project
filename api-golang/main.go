@@ -1,12 +1,11 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"api-golang/routes"
 
 	"api-golang/database"
 )
@@ -37,6 +36,14 @@ func main() {
 		tm = database.GetTime(c)
 		c.JSON(200, "pong")
 	})
+	r.GET("/calendar", routes.GetCalendar)
+	r.POST("/calendar", routes.CreateCalendar)
+	r.GET("/calendar/:id", routes.GetCalendarByID)
+	r.PUT("/calendar/:id", routes.UpdateCalendar)
+	r.DELETE("/calendar/:id", routes.DeleteCalendar)
+
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (or "PORT" env var)
+
 }
+
