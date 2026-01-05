@@ -44,6 +44,24 @@ Champs recherchables:
 Relations:
 - tasks.assigned_to → users.id
 
+## Table: calendar (Team 7 – Events)
+Source:
+- Branche: origin/feature/calendar
+- Fichier: api-golang/database/calendar.sql
+
+Champs:
+- id (PK)
+- title (NOT NULL)
+- description
+- start_date (NOT NULL)
+- end_date (NOT NULL)
+- user_id
+- created_at (default CURRENT_TIMESTAMP)
+
+Champs recherchables:
+- title
+- description
+
+
 ## Tables encore à confirmer
-- events (Team 7)
 - polls (Team 3)
