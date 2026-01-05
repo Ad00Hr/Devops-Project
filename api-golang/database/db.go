@@ -48,3 +48,8 @@ func GetTime(ctx *gin.Context) time.Time {
 	}
 	return tm
 }
+
+// GetDB exposes the shared SQLite DB instance
+func GetDB() *sql.DB {
+	return db
+}

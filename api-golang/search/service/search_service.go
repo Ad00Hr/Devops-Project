@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"api-golang/database"
 	"api-golang/search/model"
 )
 
@@ -22,6 +23,7 @@ func (s *searchService) Search(query string, types []string, limit int) (model.S
 	if q == "" {
 		return model.SearchResponse{}, errors.New("missing query parameter: q")
 	}
+
 	if limit <= 0 {
 		limit = 20
 	}
@@ -29,19 +31,111 @@ func (s *searchService) Search(query string, types []string, limit int) (model.S
 		limit = 50
 	}
 
-	// ✅ MOCK RESULTS (à remplacer quand Merieme donne schéma DB)
-	results := []model.SearchResult{
-		{Type: "task", ID: 1, Label: "Demo task result", Snippet: "This is a mock search result."},
-		{Type: "user", ID: 2, Label: "Demo user result", Snippet: "Mock user snippet."},
+	results := []model.SearchResult{}
+
+	// déterminer quels types chercher
+	searchUsers := len(types) == 0 || contains(types, "users")
+	searchTasks := len(types) == 0 || contains(types, "tasks")
+	searchCalendar := len(types) == 0 || contains(types, "calendar")
+
+	db := database.GetDB()
+
+	// 🔍 USERS
+	if searchUsers {
+		rows, err := db.Query(`
+			SELECT id, username, email
+			FROM users
+			WHERE LOWER(username) LIKE '%' || LOWER(?) || '%'
+			   OR LOWER(email) LIKE '%' || LOWER(?) || '%'
+		`, q, q)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var id int64
+				var username, email string
+				if err := rows.Scan(&id, &username, &email); err == nil {
+					results = append(results, model.SearchResult{
+						Type:    "users",
+						ID:      id,
+						Label:   username,
+						Snippet: email,
+					})
+					if len(results) >= limit {
+						return model.SearchResponse{Query: q, Results: results}, nil
+					}
+				}
+			}
+		}
 	}
 
-	// Appliquer limit
-	if len(results) > limit {
-		results = results[:limit]
+	// 🔍 TASKS
+	if searchTasks {
+		rows, err := db.Query(`
+			SELECT id, title, description
+			FROM tasks
+			WHERE LOWER(title) LIKE '%' || LOWER(?) || '%'
+			   OR LOWER(description) LIKE '%' || LOWER(?) || '%'
+		`, q, q)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var id int64
+				var title, description string
+				if err := rows.Scan(&id, &title, &description); err == nil {
+					results = append(results, model.SearchResult{
+						Type:    "tasks",
+						ID:      id,
+						Label:   title,
+						Snippet: description,
+					})
+					if len(results) >= limit {
+						return model.SearchResponse{Query: q, Results: results}, nil
+					}
+				}
+			}
+		}
+	}
+
+	// 🔍 CALENDAR
+	if searchCalendar {
+		rows, err := db.Query(`
+			SELECT id, title, description
+			FROM calendar
+			WHERE LOWER(title) LIKE '%' || LOWER(?) || '%'
+			   OR LOWER(description) LIKE '%' || LOWER(?) || '%'
+		`, q, q)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var id int64
+				var title, description string
+				if err := rows.Scan(&id, &title, &description); err == nil {
+					results = append(results, model.SearchResult{
+						Type:    "calendar",
+						ID:      id,
+						Label:   title,
+						Snippet: description,
+					})
+					if len(results) >= limit {
+						return model.SearchResponse{Query: q, Results: results}, nil
+					}
+				}
+			}
+		}
 	}
 
 	return model.SearchResponse{
 		Query:   q,
 		Results: results,
 	}, nil
+}
+
+// utilitaire pour vérifier un type
+func contains(list []string, value string) bool {
+	for _, v := range list {
+		if strings.EqualFold(strings.TrimSpace(v), value) {
+			return true
+		}
+	}
+	return false
 }
