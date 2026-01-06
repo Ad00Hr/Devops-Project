@@ -8,6 +8,8 @@ import (
 	"api-golang/routes"
 
 	"api-golang/database"
+	"github.com/gin-contrib/cors"
+
 )
 
 func init() {
@@ -23,7 +25,11 @@ func main() {
 
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
-
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type"},
+	}))
 	var tm time.Time
 
 	r.GET("/", func(c *gin.Context) {
