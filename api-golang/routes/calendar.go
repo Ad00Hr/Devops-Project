@@ -9,21 +9,39 @@ import (
 )
 
 type CalendarItem struct {
-    ID          int    `json:"id"`
-    Title       string `json:"title" binding:"required,min=3"`
-    Description string `json:"description"`
-    StartDate   string `json:"start_date" binding:"required"`
-    EndDate     string `json:"end_date" binding:"required"`
-    UserID      int    `json:"user_id" binding:"required"`
+	ID          int    `json:"id"`
+	Title       string `json:"title" binding:"required,min=3"`
+	Description string `json:"description"`
+	StartDate   string `json:"start_date" binding:"required"`
+	EndDate     string `json:"end_date" binding:"required"`
+	UserID      int    `json:"user_id" binding:"required"`
 }
 
-
 // GET /calendar
+// Option: GET /calendar?month=YYYY-MM  (ex: 2026-01)
 func GetCalendar(c *gin.Context) {
-	rows, err := database.DB().Query(`
-		SELECT id, title, description, start_date, end_date, user_id
-		FROM calendar
-	`)
+	month := c.Query("month") // ex: "2026-01"
+
+	var (
+		rows *sql.Rows
+		err  error
+	)
+
+	if month != "" {
+		rows, err = database.DB().Query(`
+			SELECT id, title, description, start_date, end_date, user_id
+			FROM calendar
+			WHERE start_date LIKE ?
+			ORDER BY start_date ASC
+		`, month+"%")
+	} else {
+		rows, err = database.DB().Query(`
+			SELECT id, title, description, start_date, end_date, user_id
+			FROM calendar
+			ORDER BY start_date ASC
+		`)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch calendar"})
 		return
@@ -46,40 +64,39 @@ func GetCalendar(c *gin.Context) {
 
 // POST /calendar
 func CreateCalendar(c *gin.Context) {
-    var body CalendarItem
+	var body CalendarItem
 
-    if err := c.ShouldBindJSON(&body); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "error": "invalid fields",
-            "details": err.Error(),
-        })
-        return
-    }
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid fields",
+			"details": err.Error(),
+		})
+		return
+	}
 
-    // Validation simple supplémentaire
-    if body.StartDate > body.EndDate {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "error": "start_date must be before end_date",
-        })
-        return
-    }
+	// Validation simple supplémentaire
+	if body.StartDate > body.EndDate {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "start_date must be before end_date",
+		})
+		return
+	}
 
-    res, err := database.DB().Exec(
-        "INSERT INTO calendar (title, description, start_date, end_date, user_id) VALUES (?, ?, ?, ?, ?)",
-        body.Title, body.Description, body.StartDate, body.EndDate, body.UserID,
-    )
+	res, err := database.DB().Exec(
+		"INSERT INTO calendar (title, description, start_date, end_date, user_id) VALUES (?, ?, ?, ?, ?)",
+		body.Title, body.Description, body.StartDate, body.EndDate, body.UserID,
+	)
 
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    id, _ := res.LastInsertId()
-    body.ID = int(id)
+	id, _ := res.LastInsertId()
+	body.ID = int(id)
 
-    c.JSON(http.StatusCreated, body)
+	c.JSON(http.StatusCreated, body)
 }
-
 
 // GET /calendar/:id
 func GetCalendarByID(c *gin.Context) {
@@ -107,37 +124,36 @@ func GetCalendarByID(c *gin.Context) {
 
 // PUT /calendar/:id
 func UpdateCalendar(c *gin.Context) {
-    id := c.Param("id")
+	id := c.Param("id")
 
-    var body CalendarItem
-    if err := c.ShouldBindJSON(&body); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "error": "invalid fields",
-            "details": err.Error(),
-        })
-        return
-    }
+	var body CalendarItem
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid fields",
+			"details": err.Error(),
+		})
+		return
+	}
 
-    if body.StartDate > body.EndDate {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "error": "start_date must be before end_date",
-        })
-        return
-    }
+	if body.StartDate > body.EndDate {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "start_date must be before end_date",
+		})
+		return
+	}
 
-    _, err := database.DB().Exec(
-        "UPDATE calendar SET title=?, description=?, start_date=?, end_date=?, user_id=? WHERE id=?",
-        body.Title, body.Description, body.StartDate, body.EndDate, body.UserID, id,
-    )
+	_, err := database.DB().Exec(
+		"UPDATE calendar SET title=?, description=?, start_date=?, end_date=?, user_id=? WHERE id=?",
+		body.Title, body.Description, body.StartDate, body.EndDate, body.UserID, id,
+	)
 
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{"status": "updated"})
+	c.JSON(http.StatusOK, gin.H{"status": "updated"})
 }
-
 
 // DELETE /calendar/:id
 func DeleteCalendar(c *gin.Context) {

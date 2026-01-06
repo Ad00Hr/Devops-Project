@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -48,20 +50,43 @@ func GetTime(ctx *gin.Context) time.Time {
 	return t
 }
 
+// Migrate executes all SQL files in api-golang/migrations
 func Migrate() error {
-	query := `
-CREATE TABLE IF NOT EXISTS calendar (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	title TEXT NOT NULL,
-	description TEXT,
-	start_date TEXT NOT NULL,
-	end_date TEXT NOT NULL,
-	user_id INTEGER,
-	created_at TEXT DEFAULT CURRENT_TIMESTAMP
-);`
+	_, currentFile, _, _ := runtime.Caller(0)
+	rootDir := filepath.Dir(filepath.Dir(filepath.Dir(currentFile)))
+	migrationsDir := filepath.Join(rootDir, "api-golang", "migrations")
 
-	_, err := db.Exec(query)
-	return err
+	entries, err := os.ReadDir(migrationsDir)
+	if err != nil {
+		// Si le dossier n'existe pas encore, tu peux retourner nil ou err.
+        // Ici on retourne err pour obliger la présence des migrations.
+		return err
+	}
+
+	var files []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(entry.Name(), ".sql") {
+			files = append(files, filepath.Join(migrationsDir, entry.Name()))
+		}
+	}
+
+	// Ensure migrations run in order: 001_, 002_, etc.
+	sort.Strings(files)
+
+	for _, file := range files {
+		content, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		if _, err := db.Exec(string(content)); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func DB() *sql.DB {
