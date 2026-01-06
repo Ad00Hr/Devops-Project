@@ -8,40 +8,37 @@ import (
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
-// DB est en MAJUSCULE pour être exporté et utilisé par tes futurs handlers
+// DB est accessible globalement
 var DB *sql.DB
 
 func InitDB() error {
-	// Utilise DB_PATH défini dans le docker-compose (/database/dev.db)
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "./dev.db"
 	}
 
 	var err error
-	// Mode rwc : permet de CRÉER le fichier dev.db s'il n'existe pas dans le volume
 	DB, err = sql.Open("sqlite3", dbPath+"?cache=shared&mode=rwc&_fk=1")
 	if err != nil {
 		return err
 	}
 
-	// --- ÉTAPE 3 : CRÉATION AUTOMATIQUE DES TABLES ---
-	// Ce code s'exécute à chaque démarrage du container Go
+	// Schéma aligné sur tes structures Poll et Option
 	schema := `
 	CREATE TABLE IF NOT EXISTS polls (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		question TEXT NOT NULL,
 		type TEXT CHECK(type IN ('single', 'multiple')) NOT NULL,
 		created_by INTEGER NOT NULL,
-		is_closed INTEGER DEFAULT 0,
-		close_at DATETIME,
+		is_closed BOOLEAN DEFAULT 0,
+		ends_at DATETIME,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 
 	CREATE TABLE IF NOT EXISTS poll_options (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		poll_id INTEGER NOT NULL,
-		label TEXT NOT NULL,
+		text TEXT NOT NULL,
 		FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
 	);
 
