@@ -12,7 +12,7 @@ import (
 )
 
 func setupRouter() *gin.Engine {
-	// 🔹 INITIALISATION DB (OBLIGATOIRE POUR LES TESTS)
+	// INITIALISATION DB (OBLIGATOIRE POUR LES TESTS)
 	if err := database.InitDB(); err != nil {
 		panic(err)
 	}
