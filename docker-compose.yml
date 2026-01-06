@@ -1,0 +1,32 @@
+services:
+  api-golang:
+    build: ./api-golang
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dev.db:/app/dev.db  # Partage de la DB
+    environment:
+      - DB_PATH=/app/dev.db
+
+  api-node:
+    build: ./api-node
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api-node:/app
+      - /app/node_modules
+      - ./dev.db:/app/dev.db  # Partage de la même DB au même endroit
+    environment:
+      - PORT=3000 # On s'assure que Node utilise bien le port 3000
+    depends_on:
+      - api-golang
+
+  client-react:
+    build: ./client-react
+    ports:
+      - "5173:5173"           # Port standard pour Vite
+    volumes:
+      - ./client-react:/app
+      - /app/node_modules
+    depends_on:
+      - api-node
