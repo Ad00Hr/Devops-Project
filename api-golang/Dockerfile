@@ -10,6 +10,8 @@ RUN go mod download
 # Copy all source code
 COPY . .
 
+
+
 # Build the Go binary with CGO enabled
 RUN CGO_ENABLED=1 go build -o api .  && ls -l /app
 

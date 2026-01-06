@@ -1,51 +1,54 @@
 // api-golang/database/db.go
-// SQLite version for Step 1 & 2 – NO Docker, NO Postgres
 package database
 
 import (
 	"database/sql"
 	"os"
-	"runtime" // prevent golang from running
-	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
-var db *sql.DB
+// DB est déclaré en MAJUSCULE pour être accessible partout (Global)
+var DB *sql.DB
 
-// InitDB initializes the shared SQLite database (dev.db in project root)
+// InitDB initializes the shared SQLite database
 func InitDB() error {
-	// Calculate path: go up two levels from this file → project root
-	_, currentFile, _, _ := runtime.Caller(0)
-	rootDir := filepath.Dir(filepath.Dir(filepath.Dir(currentFile)))
-	dbPath := filepath.Join(rootDir, "dev.db")
+	// --- CORRECTION CHEMIN ---
+	// On récupère le chemin depuis docker-compose (DB_PATH=/app/dev.db)
+	// Si la variable est vide, on utilise "./dev.db" par défaut
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "./dev.db"
+	}
 
-	// Open (and create if not exists) the SQLite file
 	var err error
-	db, err = sql.Open("sqlite3", dbPath+"?cache=shared&mode=rwc&_fk=1")
+	
+	// --- CORRECTION VARIABLE ---
+	// Utilisation de "DB" (Majuscule) au lieu de "db"
+	DB, err = sql.Open("sqlite3", dbPath+"?cache=shared&mode=rwc&_fk=1")
 	if err != nil {
 		return err
 	}
 
 	// Test the connection
-	return db.Ping()
+	return DB.Ping()
 }
 
 // GetTime returns the current time from SQLite
-// Same signature as the original Postgres version → zero code changes elsewhere
 func GetTime(ctx *gin.Context) string {
-
 	var now string
 
-	// SQLite: datetime('now') or CURRENT_TIMESTAMP both work
-	row := db.QueryRow("SELECT datetime('now', 'localtime')")
+	// --- CORRECTION VARIABLE ---
+	// Utilisation de "DB" (Majuscule)
+	row := DB.QueryRow("SELECT datetime('now', 'localtime')")
+	
 	err := row.Scan(&now)
 	if err != nil {
-		// In real apps you would return an error, but we keep original behavior
-		// (crash loudly so students see something is wrong)
 		os.Stderr.WriteString("SQLite query failed: " + err.Error() + "\n")
-		os.Exit(1)
+		// On évite le os.Exit(1) ici pour ne pas crasher tout le serveur si la DB a un hoquet,
+		// mais on renvoie une erreur vide ou on log.
+		return "Error fetching time"
 	}
 	return now
 }
