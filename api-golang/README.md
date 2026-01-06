@@ -148,7 +148,7 @@ client-react/
         └── calendar/
             ├── CalendarPage.jsx
             └── api/
-                └── calendar.js
+                └── calendar.js```
 ---
 
 ### Fonctionnalités UI implémentées
@@ -171,7 +171,7 @@ L’interface frontend consomme l’API **Calendar** via les endpoints suivants 
 Les appels HTTP sont centralisés dans le fichier suivant :
 
 ```txt
-client-react/src/features/calendar/api/calendar.js
+client-react/src/features/calendar/api/calendar.js```
 ---
 
 ### Lancement du Frontend en local
@@ -179,7 +179,7 @@ Depuis le dossier **client-react** :
 
 ```bash
 npm install
-npm run dev
+npm run dev```
 
 L’interface est accessible par défaut à l’adresse suivante :
 
