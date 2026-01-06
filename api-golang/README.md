@@ -140,6 +140,8 @@ Une interface utilisateur dédiée au calendrier a été développée en **React
 *« Chaque feature doit être développée dans une interface propre à elle »*.
 
 ### Localisation du code
+
+```txt
 client-react/
 └── src/
     └── features/
@@ -168,6 +170,7 @@ L’interface frontend consomme l’API **Calendar** via les endpoints suivants 
 
 Les appels HTTP sont centralisés dans le fichier suivant :
 
+```txt
 client-react/src/features/calendar/api/calendar.js
 ---
 
@@ -183,6 +186,6 @@ L’interface est accessible par défaut à l’adresse suivante :
 http://localhost:5173
 ---
 
-Remarque importante
+## Remarque importante
 
-L’authentification étant développée dans une feature distincte, un user_id mock est temporairement utilisé côté frontend afin de permettre les tests fonctionnels de la feature
+L’authentification étant développée dans une feature distincte, un **user_id mock** est temporairement utilisé côté frontend afin de permettre les tests fonctionnels de la feature **Calendar**.
