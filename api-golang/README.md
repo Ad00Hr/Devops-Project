@@ -1,7 +1,3 @@
-Voici la version mise à jour de votre fichier **README.md**, incluant la section Docker, tout en conservant une structure professionnelle et sans aucun emoji.
-
----
-
 # Calendar API - Go + Gin + SQLite
 
 Cette API REST permet de gérer un calendrier d'événements. Elle est développée en Go avec le framework Gin et utilise SQLite pour le stockage des données.
