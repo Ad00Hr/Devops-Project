@@ -8,43 +8,54 @@ const emptyForm = {
   description: "",
   start_date: "",
   end_date: "",
+  start_time: "00:00", // AJOUT
+  end_time: "00:00",   // AJOUT
 };
 
-// --- helpers (filtre + tri dates robustes) ---
 function normStr(v) {
   return String(v ?? "").trim().toLowerCase();
 }
 
-// Retourne une clé ISO "YYYY-MM-DD" si possible, sinon "".
-// Supporte "YYYY-MM-DD", "DD/MM/YY", "DD/MM/YYYY".
 function dateKey(d) {
   const s = String(d ?? "").trim();
   if (!s) return "";
 
-  // déjà ISO
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
 
-  // formats avec /
   if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) {
     const [dd, mm, yy] = s.split("/");
     const day = dd.padStart(2, "0");
     const mon = mm.padStart(2, "0");
     let year = yy;
-    if (yy.length === 2) year = `20${yy}`; // 25 -> 2025
+    if (yy.length === 2) year = `20${yy}`;
     return `${year}-${mon}-${day}`;
   }
 
   return "";
 }
 
+// YYYY-MM (à partir d'une date)
+function monthKey(d) {
+  const k = dateKey(d);
+  return k ? k.slice(0, 7) : "";
+}
+
 function cmpDateAsc(a, b) {
   const ka = dateKey(a);
   const kb = dateKey(b);
-  // si une date est invalide, on la met à la fin
   if (!ka && !kb) return 0;
   if (!ka) return 1;
   if (!kb) return -1;
   return ka.localeCompare(kb);
+}
+
+function cmpMonthAsc(a, b) {
+  const ma = monthKey(a);
+  const mb = monthKey(b);
+  if (!ma && !mb) return 0;
+  if (!ma) return 1;
+  if (!mb) return -1;
+  return ma.localeCompare(mb);
 }
 
 export default function App() {
@@ -60,15 +71,20 @@ export default function App() {
 
   const [submitting, setSubmitting] = useState(false);
 
-  // Recherche + tri
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState("start_asc"); // start_asc | start_desc | title_asc
 
-  // Modal delete
+  // MODIF: nouveaux tris (mois + date + titre)
+  const [sort, setSort] = useState("month_desc");
+
   const [deleteId, setDeleteId] = useState(null);
 
-  // Erreurs par champ
-  const [fieldErr, setFieldErr] = useState({ title: "", start_date: "", end_date: "" });
+  const [fieldErr, setFieldErr] = useState({
+    title: "",
+    start_date: "",
+    end_date: "",
+    start_time: "", // AJOUT
+    end_time: "",   // AJOUT
+  });
 
   function toastOk(msg) {
     setOk(msg);
@@ -80,7 +96,7 @@ export default function App() {
     setErr("");
     setLoading(true);
     try {
-      const data = await getCalendar();
+      const data = await getCalendar(); // MODIF: plus de month
       setEvents(Array.isArray(data) ? data : []);
     } catch (e) {
       setErr(e?.message || "Erreur lors du chargement.");
@@ -106,30 +122,40 @@ export default function App() {
       description: ev.description ?? "",
       start_date: ev.start_date ?? "",
       end_date: ev.end_date ?? "",
+      start_time: ev.start_time ?? "00:00", // AJOUT
+      end_time: ev.end_time ?? "00:00",     // AJOUT
     });
     setErr("");
-    setFieldErr({ title: "", start_date: "", end_date: "" });
+    setFieldErr({ title: "", start_date: "", end_date: "", start_time: "", end_time: "" });
   }
 
   function cancelEdit() {
     setEditingId(null);
     setForm(emptyForm);
     setErr("");
-    setFieldErr({ title: "", start_date: "", end_date: "" });
+    setFieldErr({ title: "", start_date: "", end_date: "", start_time: "", end_time: "" });
   }
 
   function validate(p) {
-    const fe = { title: "", start_date: "", end_date: "" };
+    const fe = { title: "", start_date: "", end_date: "", start_time: "", end_time: "" };
     const title = (p.title || "").trim();
 
     if (title.length < 3) fe.title = "Minimum 3 caractères.";
     if (!p.start_date) fe.start_date = "Obligatoire.";
     if (!p.end_date) fe.end_date = "Obligatoire.";
 
-    // compare dates (ISO) si possible, sinon compare string
+    // ✅ heures
+    if (!p.start_time) fe.start_time = "Obligatoire.";
+    if (!p.end_time) fe.end_time = "Obligatoire.";
+
     const ks = dateKey(p.start_date) || String(p.start_date || "");
     const ke = dateKey(p.end_date) || String(p.end_date || "");
-    if (p.start_date && p.end_date && ks > ke) fe.end_date = "Doit être ≥ start date.";
+    if (p.start_date && p.end_date && ks > ke) fe.end_date = "Doit être ≥ date début.";
+
+    // si même jour, comparer les heures
+    if (p.start_date && p.end_date && ks === ke && p.start_time && p.end_time && p.start_time > p.end_time) {
+      fe.end_time = "Doit être ≥ heure début (si même jour).";
+    }
 
     setFieldErr(fe);
     return !Object.values(fe).some(Boolean);
@@ -178,7 +204,6 @@ export default function App() {
     }
   }
 
-  // ✅ filtre + tri robustes
   const filteredSorted = useMemo(() => {
     const needle = normStr(q);
     let list = [...events];
@@ -190,7 +215,9 @@ export default function App() {
           ev.description,
           ev.start_date,
           ev.end_date,
-          ev.id, // bonus: taper "2" peut aider à retrouver id=2
+          ev.start_time, // AJOUT
+          ev.end_time,   // AJOUT
+          ev.id,
         ]
           .map(normStr)
           .join(" ");
@@ -198,12 +225,19 @@ export default function App() {
       });
     }
 
-    if (sort === "start_asc") {
+    // MODIF: tri unique (mois/date/titre)
+    if (sort === "month_asc") {
+      list.sort((a, b) => cmpMonthAsc(a.start_date, b.start_date));
+    } else if (sort === "month_desc") {
+      list.sort((a, b) => -cmpMonthAsc(a.start_date, b.start_date));
+    } else if (sort === "start_asc") {
       list.sort((a, b) => cmpDateAsc(a.start_date, b.start_date));
     } else if (sort === "start_desc") {
       list.sort((a, b) => -cmpDateAsc(a.start_date, b.start_date));
     } else if (sort === "title_asc") {
       list.sort((a, b) => normStr(a.title).localeCompare(normStr(b.title)));
+    } else if (sort === "title_desc") {
+      list.sort((a, b) => -normStr(a.title).localeCompare(normStr(b.title)));
     }
 
     return list;
@@ -211,10 +245,9 @@ export default function App() {
 
   return (
     <div style={styles.app}>
-      {/* Top Bar */}
       <div style={styles.topbar}>
         <div>
-          <div style={styles.brand}>Calendar</div>
+          <div style={styles.brand}>Calendrier</div>
           <div style={styles.subtitle}>Gestion des événements</div>
         </div>
 
@@ -222,31 +255,31 @@ export default function App() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Rechercher (titre, desc, date, id)…"
+            placeholder="Rechercher (titre, desc, date, heure, id)…"
             style={styles.search}
           />
 
           <select value={sort} onChange={(e) => setSort(e.target.value)} style={styles.select}>
-            <option value="start_asc">Date ↑</option>
-            <option value="start_desc">Date ↓</option>
-            <option value="title_asc">Titre A→Z</option>
+            <option value="month_desc">Trier : Mois (récent → ancien)</option>
+            <option value="month_asc">Trier : Mois (ancien → récent)</option>
+            <option value="start_asc">Trier : Date début ↑</option>
+            <option value="start_desc">Trier : Date début ↓</option>
+            <option value="title_asc">Trier : Titre A→Z</option>
+            <option value="title_desc">Trier : Titre Z→A</option>
           </select>
 
           <button onClick={refresh} style={styles.btnGhost} disabled={loading || submitting}>
-            {loading ? "…" : "Refresh"}
+            {loading ? "…" : "Actualiser"}
           </button>
         </div>
       </div>
 
-      {/* Alerts */}
       <div style={styles.container}>
         {err && <div style={styles.alertError}>{err}</div>}
         {ok && <div style={styles.alertOk}>{ok}</div>}
       </div>
 
-      {/* Main grid */}
       <div style={styles.grid}>
-        {/* LIST */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <div>
@@ -277,19 +310,23 @@ export default function App() {
                     <div style={{ minWidth: 0 }}>
                       <div style={styles.eventTitle}>{ev.title}</div>
                       <div style={styles.eventMeta}>
-                        <span>{ev.start_date}</span>
+                        <span>
+                          {ev.start_date} {ev.start_time || "00:00"}
+                        </span>
                         <span style={styles.dot} />
-                        <span>{ev.end_date}</span>
+                        <span>
+                          {ev.end_date} {ev.end_time || "00:00"}
+                        </span>
                       </div>
                       {ev.description ? <div style={styles.eventDesc}>{ev.description}</div> : null}
                     </div>
 
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={() => startEdit(ev)} style={styles.btnSoft} disabled={submitting}>
-                        Edit
+                        Modifier
                       </button>
                       <button onClick={() => setDeleteId(ev.id)} style={styles.btnDanger} disabled={submitting}>
-                        Delete
+                        Supprimer
                       </button>
                     </div>
                   </div>
@@ -299,7 +336,6 @@ export default function App() {
           )}
         </div>
 
-        {/* FORM */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <div>
@@ -312,13 +348,13 @@ export default function App() {
 
           <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
             <div style={styles.field}>
-              <label style={styles.label}>Title</label>
+              <label style={styles.label}>Titre</label>
               <input
                 name="title"
                 value={form.title}
                 onChange={onChange}
                 style={{ ...styles.input, ...(fieldErr.title ? styles.inputError : null) }}
-                placeholder="Ex: Cours DevOps"
+                placeholder="Ex: Réunion d'équipe"
                 disabled={submitting}
               />
               {fieldErr.title && <div style={styles.helpError}>{fieldErr.title}</div>}
@@ -331,14 +367,14 @@ export default function App() {
                 value={form.description}
                 onChange={onChange}
                 style={styles.input}
-                placeholder="Ex: Chapitre Docker"
+                placeholder="Ex: Point sprint / planning"
                 disabled={submitting}
               />
             </div>
 
             <div style={styles.row2}>
               <div style={styles.field}>
-                <label style={styles.label}>Start date</label>
+                <label style={styles.label}>Date début</label>
                 <input
                   name="start_date"
                   type="date"
@@ -351,7 +387,7 @@ export default function App() {
               </div>
 
               <div style={styles.field}>
-                <label style={styles.label}>End date</label>
+                <label style={styles.label}>Date fin</label>
                 <input
                   name="end_date"
                   type="date"
@@ -364,24 +400,54 @@ export default function App() {
               </div>
             </div>
 
+            {/* ✅ AJOUT: heures */}
+            <div style={styles.row2}>
+              <div style={styles.field}>
+                <label style={styles.label}>Heure début</label>
+                <input
+                  name="start_time"
+                  type="time"
+                  value={form.start_time}
+                  onChange={onChange}
+                  style={{ ...styles.input, ...(fieldErr.start_time ? styles.inputError : null) }}
+                  disabled={submitting}
+                />
+                {fieldErr.start_time && <div style={styles.helpError}>{fieldErr.start_time}</div>}
+              </div>
+
+              <div style={styles.field}>
+                <label style={styles.label}>Heure fin</label>
+                <input
+                  name="end_time"
+                  type="time"
+                  value={form.end_time}
+                  onChange={onChange}
+                  style={{ ...styles.input, ...(fieldErr.end_time ? styles.inputError : null) }}
+                  disabled={submitting}
+                />
+                {fieldErr.end_time && <div style={styles.helpError}>{fieldErr.end_time}</div>}
+              </div>
+            </div>
+
             <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
               <button type="submit" style={styles.btnPrimary} disabled={submitting}>
-                {submitting ? "…" : isEditing ? "Update" : "Create"}
+                {submitting ? "…" : isEditing ? "Mettre à jour" : "Créer"}
               </button>
 
               {isEditing && (
                 <button type="button" onClick={cancelEdit} style={styles.btnGhost} disabled={submitting}>
-                  Cancel
+                  Annuler
                 </button>
               )}
             </div>
 
-            <div style={styles.footerHint}>Règles: title ≥ 3 · start_date ≤ end_date</div>
+            <div style={styles.footerHint}>
+              Règles : Titre ≥ 3 · Date début ≤ Date fin · (si même jour) Heure début ≤ Heure fin
+            </div>
           </form>
         </div>
       </div>
 
-      {/* Delete modal */}
       {deleteId !== null && (
         <div style={styles.modalOverlay} onMouseDown={() => !submitting && setDeleteId(null)}>
           <div style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>

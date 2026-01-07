@@ -9,18 +9,16 @@ async function req(path, options = {}, label = "request") {
   const res = await fetch(`${BASE}${path}`, options);
 
   if (!res.ok) {
-    // essayer de lire une erreur JSON { error, details }
     let message = `${label} failed: ${res.status}`;
     try {
       const body = await res.json();
       message = body?.details || body?.error || message;
     } catch {
-      // ignore si pas de JSON
+      // ignore
     }
     throw new Error(message);
   }
 
-  // certaines routes (DELETE) peuvent ne rien renvoyer
   try {
     return await res.json();
   } catch {
@@ -28,8 +26,9 @@ async function req(path, options = {}, label = "request") {
   }
 }
 
+// MODIF: plus de filtre month, on récupère tout
 export async function getCalendar() {
-  const data = await req("/calendar", {}, "GET /calendar");
+  const data = await req(`/calendar`, {}, "GET /calendar");
   return normalize(data);
 }
 
