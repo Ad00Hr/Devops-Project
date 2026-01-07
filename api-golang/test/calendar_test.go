@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"api-golang/database"
@@ -11,11 +12,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var dbOnce sync.Once
+
 func setupRouter() *gin.Engine {
-	// INITIALISATION DB (OBLIGATOIRE POUR LES TESTS)
-	if err := database.InitDB(); err != nil {
-		panic(err)
-	}
+	// INITIALISATION DB (UNE SEULE FOIS POUR TOUS LES TESTS)
+	dbOnce.Do(func() {
+		if err := database.InitDB(); err != nil {
+			panic(err)
+		}
+	})
 
 	r := gin.Default()
 	r.GET("/calendar", routes.GetCalendar)
@@ -41,7 +46,6 @@ func TestCreateCalendarBadRequest(t *testing.T) {
 	r := setupRouter()
 	w := httptest.NewRecorder()
 
-	// title trop court + champs manquants => 400
 	body := []byte(`{"title":"aa"}`)
 	req, _ := http.NewRequest("POST", "/calendar", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")

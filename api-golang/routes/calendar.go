@@ -13,7 +13,9 @@ type CalendarItem struct {
 	Title       string `json:"title" binding:"required,min=3"`
 	Description string `json:"description"`
 	StartDate   string `json:"start_date" binding:"required"`
+	StartTime   string `json:"start_time"` // added
 	EndDate     string `json:"end_date" binding:"required"`
+	EndTime     string `json:"end_time"` // added
 	UserID      int    `json:"user_id" binding:"required"`
 }
 
@@ -29,17 +31,17 @@ func GetCalendar(c *gin.Context) {
 
 	if month != "" {
 		rows, err = database.DB().Query(`
-			SELECT id, title, description, start_date, end_date, user_id
-			FROM calendar
-			WHERE start_date LIKE ?
-			ORDER BY start_date ASC
-		`, month+"%")
+            SELECT id, title, description, start_date, start_time, end_date, end_time, user_id
+            FROM calendar
+            WHERE start_date LIKE ?
+            ORDER BY start_date ASC, start_time ASC
+        `, month+"%")
 	} else {
 		rows, err = database.DB().Query(`
-			SELECT id, title, description, start_date, end_date, user_id
-			FROM calendar
-			ORDER BY start_date ASC
-		`)
+            SELECT id, title, description, start_date, start_time, end_date, end_time, user_id
+            FROM calendar
+            ORDER BY start_date ASC, start_time ASC
+        `)
 	}
 
 	if err != nil {
@@ -52,7 +54,7 @@ func GetCalendar(c *gin.Context) {
 
 	for rows.Next() {
 		var it CalendarItem
-		if err := rows.Scan(&it.ID, &it.Title, &it.Description, &it.StartDate, &it.EndDate, &it.UserID); err != nil {
+		if err := rows.Scan(&it.ID, &it.Title, &it.Description, &it.StartDate, &it.StartTime, &it.EndDate, &it.EndTime, &it.UserID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read calendar entry"})
 			return
 		}
@@ -74,7 +76,7 @@ func CreateCalendar(c *gin.Context) {
 		return
 	}
 
-	// Validation simple supplémentaire
+	// Validation simple supplémentaire (date)
 	if body.StartDate > body.EndDate {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "start_date must be before end_date",
@@ -82,9 +84,17 @@ func CreateCalendar(c *gin.Context) {
 		return
 	}
 
+	// Validation heure 
+	if body.StartDate == body.EndDate && body.StartTime != "" && body.EndTime != "" && body.StartTime > body.EndTime {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "start_time must be before end_time",
+		})
+		return
+	}
+
 	res, err := database.DB().Exec(
-		"INSERT INTO calendar (title, description, start_date, end_date, user_id) VALUES (?, ?, ?, ?, ?)",
-		body.Title, body.Description, body.StartDate, body.EndDate, body.UserID,
+		"INSERT INTO calendar (title, description, start_date, start_time, end_date, end_time, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		body.Title, body.Description, body.StartDate, body.StartTime, body.EndDate, body.EndTime, body.UserID,
 	)
 
 	if err != nil {
@@ -105,9 +115,9 @@ func GetCalendarByID(c *gin.Context) {
 	var item CalendarItem
 
 	err := database.DB().QueryRow(
-		"SELECT id, title, description, start_date, end_date, user_id FROM calendar WHERE id = ?",
+		"SELECT id, title, description, start_date, start_time, end_date, end_time, user_id FROM calendar WHERE id = ?",
 		id,
-	).Scan(&item.ID, &item.Title, &item.Description, &item.StartDate, &item.EndDate, &item.UserID)
+	).Scan(&item.ID, &item.Title, &item.Description, &item.StartDate, &item.StartTime, &item.EndDate, &item.EndTime, &item.UserID)
 
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{"error": "calendar item not found"})
@@ -142,9 +152,17 @@ func UpdateCalendar(c *gin.Context) {
 		return
 	}
 
+	// Validation heure 
+	if body.StartDate == body.EndDate && body.StartTime != "" && body.EndTime != "" && body.StartTime > body.EndTime {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "start_time must be before end_time",
+		})
+		return
+	}
+
 	_, err := database.DB().Exec(
-		"UPDATE calendar SET title=?, description=?, start_date=?, end_date=?, user_id=? WHERE id=?",
-		body.Title, body.Description, body.StartDate, body.EndDate, body.UserID, id,
+		"UPDATE calendar SET title=?, description=?, start_date=?, start_time=?, end_date=?, end_time=?, user_id=? WHERE id=?",
+		body.Title, body.Description, body.StartDate, body.StartTime, body.EndDate, body.EndTime, body.UserID, id,
 	)
 
 	if err != nil {

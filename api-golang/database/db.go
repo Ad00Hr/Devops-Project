@@ -58,10 +58,33 @@ func Migrate() error {
 
 	entries, err := os.ReadDir(migrationsDir)
 	if err != nil {
-		// Si le dossier n'existe pas encore, tu peux retourner nil ou err.
-        // Ici on retourne err pour obliger la présence des migrations.
 		return err
 	}
+
+	// ✅ table pour ne pas rejouer les migrations à chaque démarrage
+	if _, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			filename TEXT PRIMARY KEY,
+			applied_at TEXT DEFAULT CURRENT_TIMESTAMP
+		);
+	`); err != nil {
+		return err
+	}
+
+	applied := map[string]bool{}
+	rows, err := db.Query(`SELECT filename FROM schema_migrations;`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var fn string
+		if err := rows.Scan(&fn); err != nil {
+			rows.Close()
+			return err
+		}
+		applied[fn] = true
+	}
+	rows.Close()
 
 	var files []string
 	for _, entry := range entries {
@@ -77,11 +100,45 @@ func Migrate() error {
 	sort.Strings(files)
 
 	for _, file := range files {
+		filename := filepath.Base(file)
+		if applied[filename] {
+			continue
+		}
+
 		content, err := os.ReadFile(file)
 		if err != nil {
 			return err
 		}
-		if _, err := db.Exec(string(content)); err != nil {
+
+		tx, err := db.Begin()
+		if err != nil {
+			return err
+		}
+
+		// ✅ exécuter les statements un par un
+		stmts := strings.Split(string(content), ";")
+		for _, s := range stmts {
+			stmt := strings.TrimSpace(s)
+			if stmt == "" {
+				continue
+			}
+			if _, err := tx.Exec(stmt); err != nil {
+				// ✅ si colonne déjà ajoutée, on ignore
+				if strings.Contains(err.Error(), "duplicate column name") {
+					continue
+				}
+				tx.Rollback()
+				return err
+			}
+		}
+
+		// marquer la migration comme appliquée
+		if _, err := tx.Exec(`INSERT OR IGNORE INTO schema_migrations(filename) VALUES (?);`, filename); err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if err := tx.Commit(); err != nil {
 			return err
 		}
 	}
