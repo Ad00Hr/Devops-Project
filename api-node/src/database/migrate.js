@@ -14,7 +14,26 @@ async function migrate() {
   `);
 
   console.log('✅ Users table created');
+ // =========================
+  // TABLE CHAT_MESSAGES (AJOUT)
+  // =========================
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  `);
+
+  console.log('✅ Chat_messages table created');
+
   await db.close();
 }
 
-migrate();
+migrate().catch(err => {
+  console.error(err);
+});
+
+ 
