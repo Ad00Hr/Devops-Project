@@ -14,7 +14,53 @@
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 }
+:root {
+  /* Valeurs par défaut (Dark) */
+  --bg-color: #242424;
+  --card-bg: #111111;
+  --text-color: rgba(255, 255, 255, 0.87);
+  --input-bg: #222222;
+  --border-color: #333333;
+  --primary-color: #6c63ff;
+}
 
+[data-theme='light'] {
+  --bg-color: #f0f2f5;
+  --card-bg: #ffffff;
+  --text-color: #213547;
+  --input-bg: #f9f9f9;
+  --border-color: #dddddd;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+:root {
+  /* Mode Dark (Par défaut) */
+  --bg-color: #1e1e1e;
+  --card-bg: #111111;
+  --text-color: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --input-bg: #1a1a1a;
+  --border-color: #222222;
+  --btn-secondary-bg: #222222;
+}
+
+[data-theme='light'] {
+  /* Mode Light */
+  --bg-color: #f0f2f5;
+  --card-bg: #ffffff;
+  --text-color: #1a1a1a; /* Écriture sombre */
+  --text-secondary: #555555;
+  --input-bg: #f9f9f9;
+  --border-color: #dddddd;
+  --btn-secondary-bg: #eeeeee;
+}
+
+/* Appliquez ces variables à vos composants dans UserProfile.jsx */
 a {
   font-weight: 500;
   color: #646cff;
