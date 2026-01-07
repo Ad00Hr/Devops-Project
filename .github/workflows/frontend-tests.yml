@@ -2,14 +2,13 @@ name: React Frontend CI
 
 on:
   push:
-    branches: [ main, master, feature/Poll ] 
+    branches: [ main, master, feature/Poll ]
   pull_request:
     branches: [ main, master ]
 
 jobs:
   test-frontend:
     runs-on: ubuntu-latest
-    
     
     defaults:
       run:
@@ -23,9 +22,13 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '18'
+        cache: 'npm' 
+        cache-dependency-path: client-react/package-lock.json
 
     - name: Install Dependencies
-      run: npm install # Daba ghadi it-installa f blastou mzn
+      run: npm install
 
     - name: Run Tests
       run: npm test -- --watchAll=false
+      env:
+        CI: true
