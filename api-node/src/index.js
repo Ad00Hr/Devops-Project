@@ -1,31 +1,19 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-
 const app = express();
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
 
-app.options("*", cors()); // 🔥 OBLIGATOIRE pour Firefox
-
+app.use(cors());
 app.use(express.json());
 
-app.use("/api/chat", require("./routes/chat.routes"));
-// Routes auth 
+// Routes Team 1 (Auth)
 app.use("/auth", require("./routes/auth"));
 
-// 🔥 ROUTES CHAT (AJOUT)
-app.use('/messages', require('./routes/messages'));
+// Routes Team 6 (Profil) - On utilise le préfixe demandé par votre frontend
+app.use("/api/users", require("./routes/profile.routes"));
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
-});
+// Routes Team 3 (Chat)
+app.use("/api/chat", require("./routes/chat.routes"));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log(`API running on port ${PORT}`)
-);
-
+app.listen(PORT, () => console.log(`Serveur actif sur le port ${PORT}`));
