@@ -16,7 +16,7 @@ type Poll struct {
 type Option struct {
 	ID     int64  `json:"id"`
 	PollID int64  `json:"poll_id"`
-	Text   string `json:"text"`
+	Text   string `json:"option_text"`
 }
 
 type CreatePollRequest struct {

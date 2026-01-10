@@ -1,5 +1,5 @@
 -- Polls table
-CREATE TABLE IF NOT EXISTS polls (
+CREATE TABLE  polls (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     question TEXT NOT NULL,
     type TEXT CHECK(type IN ('single','multiple')) NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS polls (
 );
 
 -- Poll options
-CREATE TABLE IF NOT EXISTS poll_options (
+CREATE TABLE  poll_options (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     poll_id INTEGER NOT NULL,
     option_text TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS poll_options (
 );
 
 -- Votes
-CREATE TABLE IF NOT EXISTS votes (
+CREATE TABLE  votes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     poll_id INTEGER NOT NULL,
     option_id INTEGER NOT NULL,
