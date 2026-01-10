@@ -18,12 +18,13 @@ func InitDB() error {
 	}
 
 	var err error
+	// Options: cache=shared, mode=rwc, _fk=1 (active foreign keys)
 	DB, err = sql.Open("sqlite3", dbPath+"?cache=shared&mode=rwc&_fk=1")
 	if err != nil {
 		return err
 	}
 
-	// Schéma aligné sur tes structures Poll et Option
+	// Schéma aligné EXACTEMENT sur repository.go
 	schema := `
 	CREATE TABLE IF NOT EXISTS polls (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,24 +39,19 @@ func InitDB() error {
 	CREATE TABLE IF NOT EXISTS poll_options (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		poll_id INTEGER NOT NULL,
-		text TEXT NOT NULL,
+		option_text TEXT NOT NULL,  -- ✅ Correction: "option_text" machi "text"
 		FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
 	);
 
-	CREATE TABLE IF NOT EXISTS poll_votes (
+	-- ✅ Correction: Table "votes" simple bach tmchi m3a Repository
+	CREATE TABLE IF NOT EXISTS votes (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		poll_id INTEGER NOT NULL,
+		option_id INTEGER NOT NULL,
 		user_id INTEGER NOT NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE (poll_id, user_id, option_id),
 		FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE,
-		UNIQUE(poll_id, user_id)
-	);
-
-	CREATE TABLE IF NOT EXISTS poll_vote_options (
-		vote_id INTEGER NOT NULL,
-		option_id INTEGER NOT NULL,
-		PRIMARY KEY (vote_id, option_id),
-		FOREIGN KEY (vote_id) REFERENCES poll_votes(id) ON DELETE CASCADE,
 		FOREIGN KEY (option_id) REFERENCES poll_options(id) ON DELETE CASCADE
 	);`
 

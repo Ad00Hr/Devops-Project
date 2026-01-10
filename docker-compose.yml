@@ -4,10 +4,12 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - sqlite_data:/database
+      # ✅ HNA L-FER9: Kandiro mapping direct m3a fichier local
+      # ./dev.db (PC) -> /app/dev.db (Docker)
+      - ./dev.db:/app/dev.db
     environment:
-      - DB_PATH=/database/dev.db
-    # Pas besoin de créer le fichier, Go le créera dans ce volume
+      # Gol l l-code fin yl9a database
+      - DB_PATH=/app/dev.db
 
   api-node:
     build: ./api-node
@@ -16,10 +18,11 @@ services:
     volumes:
       - ./api-node:/app
       - /app/node_modules
-      - sqlite_data:/database
+      # ✅ Node ta hwa ychouf nefs database ila bgha
+      - ./dev.db:/app/dev.db
     environment:
       - PORT=3000
-      - DB_PATH=/database/dev.db
+      - DB_PATH=/app/dev.db
     depends_on:
       - api-golang
 
@@ -33,6 +36,6 @@ services:
     depends_on:
       - api-node
 
-# Cette partie est l'astuce pour ne plus faire de "touch dev.db" manuellement
-volumes:
-  sqlite_data:
+# ❌ HADI MA B9ITICH M7TAJHA (7it st3mlna fichier local)
+# volumes:
+#   sqlite_data:
