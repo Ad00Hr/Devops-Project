@@ -94,7 +94,16 @@ const NotificationFeed = () => {
       setError(null);
       try {
         const data = await getNotifications(token);
-        if (!cancelled) setNotifications(data || []);
+        if (!cancelled) {
+          if (Array.isArray(data)) {
+            setNotifications(data);
+          } else if (data && Array.isArray(data.items)) {
+            setNotifications(data.items);
+          } else {
+            console.warn("Unexpected API response format:", data);
+            setNotifications([]);
+          }
+        }
       } catch (err) {
         console.error(err);
         if (!cancelled) setError(err.message || 'Failed to load notifications');
