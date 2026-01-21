@@ -1,15 +1,16 @@
 name: CI Hello Calendar
 
 on:
-  push:
-    branches:
-      - feature/calendar
-  pull_request:
-    branches:
-      - feature/calendar
+  workflow_dispatch:
+  #push:
+   # branches:
+   #   - feature/calendar
+ # pull_request:
+   # branches:
+   #   - feature/calendar
 
   # Lancement manuel
-  workflow_dispatch:
+
 
 jobs:
   hello-ci:
