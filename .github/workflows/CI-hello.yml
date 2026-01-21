@@ -1,0 +1,23 @@
+name: CI Hello Calendar
+
+on:
+  push:
+    branches:
+      - calendar
+  pull_request:
+    branches:
+      - calendar
+
+jobs:
+  hello-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Say Hello
+        run: |
+          echo "Hello from CI 👋"
+          echo "Branch: calendar"
+          echo "Workflow CI is running successfully"
