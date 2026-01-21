@@ -1,9 +1,71 @@
-name: Mon Premier Workflow
-on: [push]
+name: CI DevOps Project
+
+# Déclencheur : À chaque push sur la branche feature/auth
+on:
+  push:
+    branches:
+      - 'feature/auth'   # Se déclenche sur notre branche feature/auth
 
 jobs:
-  dire-bonjour:
+  # JOB 1 : Vérifier le Backend (api-node)
+  test-backend:
+    name:  Test Backend (Node.js)
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Dire coucou
-        run: echo "Hello ! Je suis le robot GitHub et je vois que tu as pushé du code !"
+      # 1. Récupérer le code
+      - name: Checkout du code
+        uses: actions/checkout@v3
+
+      # 2. Installer Node.js
+      - name: Installation de Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # 3. Installer les dépendances du Backend
+      - name: Install Backend Dependencies
+        run: |
+          cd api-node
+          npm install
+
+      # 4. Préparer la Base de Données (Important !)
+      # On lance le script de migration pour créer le fichier dev.db et les tables
+      - name: Initialisation BDD (Migrate)
+        run: |
+          cd api-node
+          node src/database/migrate.js
+
+      # 5. Lancer les tests
+      - name: Exécution des Tests (Jest)
+        run: |
+          cd api-node
+          npm test
+
+  # JOB 2 : Vérifier le Frontend (client-react)
+  build-frontend:
+    name:  Build Frontend (React)
+    runs-on: ubuntu-latest
+    needs: test-backend # Optionnel : attend que le backend soit OK avant de lancer (tu peux l'enlever pour paralléliser)
+    
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v3
+
+      - name: Installation de Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # 1. Installer les dépendances du Frontend
+      - name: Install Frontend Dependencies
+        run: |
+          cd client-react
+          npm install
+
+      # 2. Vérifier que le code compile (Build)
+      # Cela vérifie qu'il n'y a pas d'erreur de syntaxe dans ton React
+      - name: Build React App
+        run: |
+          cd client-react
+          npm run build
