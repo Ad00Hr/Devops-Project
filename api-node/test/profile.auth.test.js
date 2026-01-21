@@ -2,7 +2,7 @@ process.env.JWT_SECRET = "testsecret";
 
 const request = require("supertest");
 const jwt = require("jsonwebtoken");
-const app = require("../src/index");
+const app = require("../src/app");
 
 describe("Auth middleware – protected route", () => {
   let token;
