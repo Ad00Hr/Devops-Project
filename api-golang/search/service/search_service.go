@@ -12,10 +12,22 @@ type SearchService interface {
 	Search(query string, types []string, limit int) (model.SearchResponse, error)
 }
 
-type searchService struct{}
+type searchService struct {
+	useDB bool
+}
 
+// Constructeur pour les TESTS (mock, sans DB)
 func NewSearchService() SearchService {
-	return &searchService{}
+	return &searchService{
+		useDB: false,
+	}
+}
+
+// Constructeur pour la PROD (DB réelle)
+func NewSearchServiceWithDB() SearchService {
+	return &searchService{
+		useDB: true,
+	}
 }
 
 func (s *searchService) Search(query string, types []string, limit int) (model.SearchResponse, error) {
@@ -31,6 +43,22 @@ func (s *searchService) Search(query string, types []string, limit int) (model.S
 		limit = 50
 	}
 
+	// 🟢 MODE TEST / MOCK (PAS DE DB)
+	if !s.useDB {
+		return model.SearchResponse{
+			Query: q,
+			Results: []model.SearchResult{
+				{
+					Type:    "mock",
+					ID:      1,
+					Label:   "Mock Result",
+					Snippet: "Mock search result",
+				},
+			},
+		}, nil
+	}
+
+	// 🟢 MODE PROD / DB RÉELLE
 	results := []model.SearchResult{}
 
 	// déterminer quels types chercher
@@ -41,7 +69,7 @@ func (s *searchService) Search(query string, types []string, limit int) (model.S
 
 	db := database.GetDB()
 
-	//  USERS
+	// USERS
 	if searchUsers {
 		rows, err := db.Query(`
 			SELECT id, username, email
@@ -69,7 +97,7 @@ func (s *searchService) Search(query string, types []string, limit int) (model.S
 		}
 	}
 
-	//  TASKS
+	// TASKS
 	if searchTasks {
 		rows, err := db.Query(`
 			SELECT id, title, description
@@ -97,7 +125,7 @@ func (s *searchService) Search(query string, types []string, limit int) (model.S
 		}
 	}
 
-	//  CALENDAR
+	// CALENDAR
 	if searchCalendar {
 		rows, err := db.Query(`
 			SELECT id, title, description

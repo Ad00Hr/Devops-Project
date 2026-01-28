@@ -27,4 +27,4 @@ jobs:
 
       - name: Test Search backend
         working-directory: api-golang
-        run: go test ./... || echo "No tests for search yet"
+        run: go test ./search/... 
