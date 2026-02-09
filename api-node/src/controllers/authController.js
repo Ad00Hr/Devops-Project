@@ -44,6 +44,9 @@ exports.login = async (req, res) => {
     const token = generateToken(user.id);
     res.json({ token });
   } catch (err) {
+ 
+    console.error("CRASH LOGIN :", err); 
+    
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
