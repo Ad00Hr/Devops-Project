@@ -14,12 +14,16 @@ func NewService(repo *Repository) *Service {
 
 func (s *Service) CreatePoll(req CreatePollRequest, userID int64) (int64, error) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// 1. Validation de la question
 =======
 <<<<<<< HEAD
 <<<<<<< HEAD
 	// 1. Validation de la question (Fix l-panic)
 >>>>>>> e788922 (Revert "merge: synchronisation avec la branche distante")
+=======
+	// 1. Validation de la question
+>>>>>>> 44ccb4a (added UI + fixed endpoints and  cors api with react + added documentatio)
 	if req.Question == "" {
 		return 0, errors.New("la question ne peut pas être vide")
 	}
@@ -79,6 +83,7 @@ func (s *Service) Vote(poll Poll, req VoteRequest, userID int64) error {
 			return err
 		}
 	}
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 =======
@@ -190,6 +195,8 @@ func (s *Service) Vote(poll Poll, req VoteRequest, userID int64) error {
 	}
 >>>>>>> parent of 6266b5c (merge: synchronisation avec la branche distante)
 >>>>>>> e788922 (Revert "merge: synchronisation avec la branche distante")
+=======
+>>>>>>> 44ccb4a (added UI + fixed endpoints and  cors api with react + added documentatio)
 
 	return nil
 }
