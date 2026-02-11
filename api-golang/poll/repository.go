@@ -27,17 +27,17 @@ func (r *Repository) CreatePoll(p Poll) (int64, error) {
 }
 
 func (r *Repository) AddOption(pollID int64, text string) error {
-    // Correction: 'text' minuscule, machi 'Text'
+	// Correction: 'text' minuscule, machi 'Text'
 	_, err := r.DB.Exec(
 		`INSERT INTO poll_options (poll_id, option_text) 
 		VALUES (?, ?)`,
-		pollID, text, 
+		pollID, text,
 	)
 	return err
 }
 
 func (r *Repository) HasUserVoted(pollID, userID int64) (bool, error) {
-    // Correction: Table smitha 'votes' (selon ton SQL)
+	// Correction: Table smitha 'votes' (selon ton SQL)
 	row := r.DB.QueryRow(
 		`SELECT COUNT(*) FROM votes
 		WHERE poll_id=? AND user_id=?`,
@@ -49,8 +49,8 @@ func (r *Repository) HasUserVoted(pollID, userID int64) (bool, error) {
 }
 
 func (r *Repository) Vote(pollID, optionID, userID int64) error {
-    // Correction: Simplification pour matcher ton SQL 'votes'.
-    // Pas besoin de transaction complexe si on a une seule table 'votes'.
+	// Correction: Simplification pour matcher ton SQL 'votes'.
+	// Pas besoin de transaction complexe si on a une seule table 'votes'.
 	_, err := r.DB.Exec(
 		`INSERT INTO votes (poll_id, option_id, user_id) VALUES (?, ?, ?)`,
 		pollID, optionID, userID,
@@ -85,7 +85,7 @@ func (r *Repository) GetPollOptions(pollID int64) ([]Option, error) {
 	var options []Option
 	for rows.Next() {
 		var o Option
-        // Correction: Mapping option_text -> o.Text
+		// Correction: Mapping option_text -> o.Text
 		if err := rows.Scan(&o.ID, &o.PollID, &o.Text); err != nil {
 			return nil, err
 		}
@@ -96,7 +96,7 @@ func (r *Repository) GetPollOptions(pollID int64) ([]Option, error) {
 
 // GetAllPolls: Kayjib la liste kamla
 func (r *Repository) GetAllPolls() ([]Poll, error) {
-    // On prend les polls les plus récents en premier
+	// On prend les polls les plus récents en premier
 	rows, err := r.DB.Query(`SELECT id, question, type, created_by, created_at, is_closed FROM polls ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, err
@@ -113,4 +113,12 @@ func (r *Repository) GetAllPolls() ([]Poll, error) {
 		polls = append(polls, p)
 	}
 	return polls, nil
+}
+
+// GetVoteCount: Compte le nombre de votes pour une option
+func (r *Repository) GetVoteCount(optionID int64) (int64, error) {
+	row := r.DB.QueryRow(`SELECT COUNT(*) FROM votes WHERE option_id = ?`, optionID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }

@@ -4,7 +4,7 @@ dev:
 	@echo "React  → http://localhost:5173"
 	@echo "Node   → http://localhost:5000"
 	@echo "Go     → http://localhost:8080"
-	docker-compose up --build
+	docker-compose up 
 
 .PHONY: down
 down:

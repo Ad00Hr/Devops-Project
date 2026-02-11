@@ -36,6 +36,14 @@ services:
     depends_on:
       - api-node
 
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8081:8081"
+    depends_on:
+      - api-golang
+      - api-node
+
 # ❌ HADI MA B9ITICH M7TAJHA (7it st3mlna fichier local)
 # volumes:
 #   sqlite_data:
