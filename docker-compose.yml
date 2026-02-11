@@ -1,39 +1,59 @@
-version: '3.8'
+version: '3.8' # Version de la syntaxe Docker Compose
 
 services:
-  # Service Backend Node.js
+  # ----------------------------------------------------------------
+  # SERVICE 1 : Backend Node.js
+  # C'est le service "maître" qui gère les migrations de la base de données.
+  # ----------------------------------------------------------------
   api-node:
-    build: ./api-node
-    container_name: api-node
+    build: ./api-node         # Construit l'image à partir du Dockerfile dans le dossier ./api-node
+    container_name: api-node  # Nom explicite pour le conteneur (plus facile à trouver avec docker ps)
     ports:
-      - "3000:3000"
+      - "3000:3000"           # Mappe le port 3000 de l'hôte vers le port 3000 du conteneur
     environment:
-      - JWT_SECRET=mon_super_secret_docker
+      - JWT_SECRET=mon_super_secret_docker # Variable d'env pour la sécurité
       - PORT=3000
     volumes:
-      # Persistance de la base de données SQLite
+      # PERSISTANCE & PARTAGE :
+      # On lie le fichier 'dev.db' de l'hôte (dans le dossier ./api-node)
+      # au chemin interne du conteneur '/app/dev.db'.
+      # Cela permet de sauvegarder les données même si le conteneur est supprimé.
       - ./api-node/dev.db:/app/dev.db
-    # On surcharge la commande pour lancer la migration PUIS le serveur
+    # COMMANDE SPÉCIALE :
+    # Au lieu de juste démarrer, on lance d'abord les migrations ("npm run migrate")
+    # pour créer les tables SQLite, et SI ça réussit (&&), on lance le serveur ("npm start").
     command: sh -c "npm run migrate && npm start"
 
-  # Service Backend Go
+  # ----------------------------------------------------------------
+  # SERVICE 2 : Backend Go
+  # Ce service se connecte à la MÊME base de données que Node.js.
+  # ----------------------------------------------------------------
   api-golang:
-    build: ./api-golang
+    build: ./api-golang       # Construit l'image depuis ./api-golang
     container_name: api-golang
     ports:
-      - "8080:8080"
+      - "8080:8080"           # Accessible sur localhost:8080
     environment:
       - PORT=8080
-      - DB_PATH=/app/dev.db  # <--- On dit au code Go où trouver la DB
+      - DB_PATH=/app/dev.db   # Important : Indique au code Go le chemin interne vers la DB
     volumes:
-      - ./api-node/dev.db:/app/dev.db # <--- On partage le MEME fichier que Node
+      # POINT CRITIQUE :
+      # On monte exactement le MÊME fichier source (./api-node/dev.db) que le service Node.
+      # Ainsi, Go et Node partagent la même base de données en temps réel.
+      - ./api-node/dev.db:/app/dev.db 
 
-  # Service Frontend React
+  # ----------------------------------------------------------------
+  # SERVICE 3 : Frontend React
+  # Sert l'interface utilisateur.
+  # ----------------------------------------------------------------
   client-react:
-    build: ./client-react
+    build: ./client-react     # Construit l'image depuis ./client-react
     container_name: client-react
     ports:
-      - "80:80"
+      - "80:80"               # Le site sera accessible directement sur http://localhost (port 80 standard)
     depends_on:
+      # ORCHESTRATION :
+      # Docker tentera de démarrer 'api-node' et 'api-golang' avant de démarrer le frontend.
+      # (Note: cela n'attend pas que les serveurs soient "prêts", juste qu'ils soient lancés).
       - api-node
       - api-golang
