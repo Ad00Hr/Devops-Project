@@ -176,7 +176,7 @@ export default function CreatePoll() {
           e.target.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.25)';
         }}
       >
-        {mutation.isLoading ? '⏳ Creating...' : '✨ Create Poll'}
+        {mutation.isLoading ? '⏳ Creating...' : ' Create Poll'}
       </button>
 
       {mutation.isSuccess && (
